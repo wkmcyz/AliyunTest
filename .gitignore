@@ -1,0 +1,47 @@
+*.DS_Store
+
+# idea/android studio
+/.idea
+
+/apk
+**/bin
+**/gen
+**/obj
+/out
+build.xml
+local.properties
+local-build.sh
+vendor.all
+*.swp
+*.pyc
+
+# gradle
+**/build
+**/.gradle
+*.iml
+/.externalNativeBuild
+
+assets/config.json
+
+**/.cxx
+
+#android studio ui analysis file
+/captures
+
+# python
+/venv2
+
+# build config
+/buildConfig/buildConfig.properties
+/buildConfig/aarSrc/sourceRepo.properties
+
+# bugly
+buglybin/*
+cp_buglyQqUploadSymbolLib.jar
+
+# 模块仓和主仓没有submodule的关系
+/modules
+
+copyJob.sh
+/zebra-android-demo
+reviewers.txt
