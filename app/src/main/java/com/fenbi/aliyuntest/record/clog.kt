@@ -138,18 +138,18 @@ class HighlightRecorderService : Service() {
     private val audioMimeType = "audio/mp4a-latm"
 
     private lateinit var mediaProjection: MediaProjection
-    private lateinit var videoEncoder: MediaCodec
+//    private lateinit var videoEncoder: MediaCodec
     private lateinit var audioEncoder: MediaCodec
     private lateinit var mediaMuxer: MediaMuxer
-    private lateinit var virtualDisplay: VirtualDisplay
+//    private lateinit var virtualDisplay: VirtualDisplay
     private lateinit var audioRecord: AudioRecord
 
-    private var videoTrackIndex = -1
+//    private var videoTrackIndex = -1
     private var audioTrackIndex = -1
     private var isMuxerStarted = false
     private var isRecording = false
 
-    private var videoFirstFrameTimeUs: Long = -1L
+//    private var videoFirstFrameTimeUs: Long = -1L
     private var audioFirstFrameTimeUs: Long = -1L
     private var startFrameTimeUs: Long = 0
     private var lastFrameTimeUs: Long = 0 // 生成的 mp4 里的最后一帧的到达时间，仅做记录用。
@@ -206,43 +206,43 @@ class HighlightRecorderService : Service() {
         }
         logTree.i("Start recording. targetFile:${targetFile.absolutePath}; \nrecordConfig:${recordConfig}")
         isRecording = true
-        setupVideoEncoder(displayWidth, displayHeight, recordConfig)
+//        setupVideoEncoder(displayWidth, displayHeight, recordConfig)
         setupAudioCapture(recordConfig)
         setupMuxer(targetFile)
         startEncodingLoops()
     }
 
-    private fun setupVideoEncoder(displayWidth: Int, displayHeight: Int, recordConfig: HighlightRecordConfig) {
-        clog(
-            "startVideoEncoder", mapOf("displayWidth" to displayWidth, "displayHeight" to displayHeight, "recordConfig" to recordConfig)
-        )
-        logTree.d("Video size: ${displayWidth}x${displayHeight}")
-        val format = MediaFormat.createVideoFormat(videoMimeType, displayWidth, displayHeight).apply {
-            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
-            setInteger(MediaFormat.KEY_BIT_RATE, recordConfig.videoBitRate)
-            setInteger(MediaFormat.KEY_FRAME_RATE, recordConfig.videoFrameRate)
-            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
-        }
-
-        videoEncoder = MediaCodec.createEncoderByType(videoMimeType).apply {
-            configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-            // 当使用 MediaCodec.createInputSurface()（例如 Camera 预览数据直接输入编码器）时，编码器会自动生成时间戳。
-            createInputSurface().let { surface ->
-                virtualDisplay = mediaProjection.createVirtualDisplay(
-                    "ScreenRecorder",
-                    displayWidth,
-                    displayHeight,
-                    resources.displayMetrics.densityDpi,
-                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                    surface,
-                    null,
-                    null
-                )
-                logTree.d("Virtual display created: $virtualDisplay")
-            }
-            start()
-        }
-    }
+//    private fun setupVideoEncoder(displayWidth: Int, displayHeight: Int, recordConfig: HighlightRecordConfig) {
+//        clog(
+//            "startVideoEncoder", mapOf("displayWidth" to displayWidth, "displayHeight" to displayHeight, "recordConfig" to recordConfig)
+//        )
+//        logTree.d("Video size: ${displayWidth}x${displayHeight}")
+//        val format = MediaFormat.createVideoFormat(videoMimeType, displayWidth, displayHeight).apply {
+//            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
+//            setInteger(MediaFormat.KEY_BIT_RATE, recordConfig.videoBitRate)
+//            setInteger(MediaFormat.KEY_FRAME_RATE, recordConfig.videoFrameRate)
+//            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
+//        }
+//
+//        videoEncoder = MediaCodec.createEncoderByType(videoMimeType).apply {
+//            configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+//            // 当使用 MediaCodec.createInputSurface()（例如 Camera 预览数据直接输入编码器）时，编码器会自动生成时间戳。
+//            createInputSurface().let { surface ->
+//                virtualDisplay = mediaProjection.createVirtualDisplay(
+//                    "ScreenRecorder",
+//                    displayWidth,
+//                    displayHeight,
+//                    resources.displayMetrics.densityDpi,
+//                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+//                    surface,
+//                    null,
+//                    null
+//                )
+//                logTree.d("Virtual display created: $virtualDisplay")
+//            }
+//            start()
+//        }
+//    }
 
     @SuppressLint("MissingPermission")
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -281,37 +281,37 @@ class HighlightRecorderService : Service() {
 
     private fun startEncodingLoops() = coroutineScope.launch {
         clog("startEncodingLoops")
-        launch { processVideoOutput() }
+//        launch { processVideoOutput() }
         launch { processAudioInput() }
         launch { processAudioOutput() }
     }
 
-    private suspend fun processVideoOutput() {
-        val bufferInfo = MediaCodec.BufferInfo()
-        while (isRecording) {
-            when (val outputBufferId = videoEncoder.dequeueOutputBuffer(bufferInfo, OUTPUT_TIMEOUT_WHEN_RECORDING_US)) {
-                MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
-                    videoTrackIndex = mediaMuxer.addTrack(videoEncoder.outputFormat)
-                    startMuxerIfReady()
-                }
-
-                MediaCodec.INFO_TRY_AGAIN_LATER -> yield()
-                else -> if (outputBufferId >= 0) {
-                    if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
-                        // 忽略编码器的配置帧
-                        videoEncoder.releaseOutputBuffer(outputBufferId, false)
-                        continue
-                    }
-                    // 记录首帧时间戳
-                    if (videoFirstFrameTimeUs == -1L) {
-                        videoFirstFrameTimeUs = bufferInfo.presentationTimeUs
-                        waitVideoAudioFirstFrame()
-                    }
-                    handleEncodedData(videoTrackIndex, videoEncoder, outputBufferId, bufferInfo)
-                }
-            }
-        }
-    }
+//    private suspend fun processVideoOutput() {
+//        val bufferInfo = MediaCodec.BufferInfo()
+//        while (isRecording) {
+//            when (val outputBufferId = videoEncoder.dequeueOutputBuffer(bufferInfo, OUTPUT_TIMEOUT_WHEN_RECORDING_US)) {
+//                MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+//                    videoTrackIndex = mediaMuxer.addTrack(videoEncoder.outputFormat)
+//                    startMuxerIfReady()
+//                }
+//
+//                MediaCodec.INFO_TRY_AGAIN_LATER -> yield()
+//                else -> if (outputBufferId >= 0) {
+//                    if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
+//                        // 忽略编码器的配置帧
+//                        videoEncoder.releaseOutputBuffer(outputBufferId, false)
+//                        continue
+//                    }
+//                    // 记录首帧时间戳
+//                    if (videoFirstFrameTimeUs == -1L) {
+//                        videoFirstFrameTimeUs = bufferInfo.presentationTimeUs
+//                        waitVideoAudioFirstFrame()
+//                    }
+//                    handleEncodedData(videoTrackIndex, videoEncoder, outputBufferId, bufferInfo)
+//                }
+//            }
+//        }
+//    }
 
     private suspend fun processAudioInput() {
         // 使用与编码器输入缓冲区匹配的大小
@@ -383,12 +383,12 @@ class HighlightRecorderService : Service() {
 
     @Suppress("MaxLineLength")
     private suspend fun waitVideoAudioFirstFrame() {
-        while (audioFirstFrameTimeUs == -1L || videoFirstFrameTimeUs == -1L) {
+        while (audioFirstFrameTimeUs == -1L || audioFirstFrameTimeUs == -1L) {
             yield()
         }
-        startFrameTimeUs = min(videoFirstFrameTimeUs, audioFirstFrameTimeUs) // 初始化基准时间
+        startFrameTimeUs = min(audioFirstFrameTimeUs, audioFirstFrameTimeUs) // 初始化基准时间
         logTree.d(
-            "first frame timestamp us: $startFrameTimeUs , videoFirstFrameTimeUs：${videoFirstFrameTimeUs}; audioFirstFrameTimeUs : ${audioFirstFrameTimeUs}"
+            "first frame timestamp us: $startFrameTimeUs , videoFirstFrameTimeUs：; audioFirstFrameTimeUs : ${audioFirstFrameTimeUs}"
         )
         logTree.i("Starting consumes time : ${(startFrameTimeUs - startServiceTimeUs) / ONE_THOUSAND}ms.")
     }
@@ -396,7 +396,7 @@ class HighlightRecorderService : Service() {
     @Synchronized
     private fun startMuxerIfReady() {
         // 在启动muxer时记录起始时间
-        if (!isMuxerStarted && videoTrackIndex != -1 && audioTrackIndex != -1) {
+        if (!isMuxerStarted && audioTrackIndex != -1) {
             clog("startMuxer")
             mediaMuxer.start()
             isMuxerStarted = true
@@ -430,15 +430,15 @@ class HighlightRecorderService : Service() {
         coroutineScope.cancel()
 
         // 停止输入源
-        virtualDisplay.release()
-        mediaProjection.stop()
+//        virtualDisplay.release()
+//        mediaProjection.stop()
         audioRecord.stop()
 
         // 发送视频编码结束信号
-        videoEncoder.signalEndOfInputStream()
+//        videoEncoder.signalEndOfInputStream()
 
         // 处理剩余数据
-        drainVideoEncoder()
+//        drainVideoEncoder()
         drainAudioEncoder()
         logTree.i("Stopping consumes time : ${(lastFrameTimeUs - stopServiceTimeUs) / ONE_THOUSAND}ms.")
 
@@ -448,23 +448,23 @@ class HighlightRecorderService : Service() {
             mediaMuxer.stop()
             mediaMuxer.release()
         }
-        videoEncoder.stop()
-        videoEncoder.release()
+//        videoEncoder.stop()
+//        videoEncoder.release()
         audioEncoder.stop()
         audioEncoder.release()
         logTree.i("Recording stopped.")
     }
 
-    private fun drainVideoEncoder() {
-        val bufferInfo = MediaCodec.BufferInfo()
-        while (true) {
-            val outputBufferId = videoEncoder.dequeueOutputBuffer(bufferInfo, DRAIN_TIMEOUT_AFTER_STOP_US)
-            when {
-                outputBufferId == MediaCodec.INFO_TRY_AGAIN_LATER -> break
-                outputBufferId >= 0 -> handleEncodedData(videoTrackIndex, videoEncoder, outputBufferId, bufferInfo)
-            }
-        }
-    }
+//    private fun drainVideoEncoder() {
+//        val bufferInfo = MediaCodec.BufferInfo()
+//        while (true) {
+//            val outputBufferId = videoEncoder.dequeueOutputBuffer(bufferInfo, DRAIN_TIMEOUT_AFTER_STOP_US)
+//            when {
+//                outputBufferId == MediaCodec.INFO_TRY_AGAIN_LATER -> break
+//                outputBufferId >= 0 -> handleEncodedData(videoTrackIndex, videoEncoder, outputBufferId, bufferInfo)
+//            }
+//        }
+//    }
 
     private fun drainAudioEncoder() {
         val bufferInfo = MediaCodec.BufferInfo()
@@ -481,9 +481,9 @@ class HighlightRecorderService : Service() {
         if (isRecording) {
             stopRecordingInternal()
         }
-        if (::mediaProjection.isInitialized) {
-            mediaProjection.stop()
-        }
+//        if (::mediaProjection.isInitialized) {
+//            mediaProjection.stop()
+//        }
         instance = null
         stopSelf()
     }
